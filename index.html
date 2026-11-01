@@ -60,23 +60,29 @@
   [hidden] { display: none !important; }
 
   /* Инструкция по установке */
-  .howto { display: block; width: 100%; margin-bottom: 14px; padding: 12px; border: 1.5px solid var(--accent);
+  .sec { display: block; width: 100%; margin-bottom: 12px; padding: 12px; border: 1.5px solid var(--accent);
     border-radius: 10px; background: none; color: var(--accent); font: inherit; font-weight: 600; cursor: pointer; }
+  .btns { display: flex; gap: 8px; } .btns > * { flex: 1; margin: 0; }
   .back { width: 32px; height: 32px; margin-bottom: 12px; border: 1.5px solid var(--fg); border-radius: 8px;
     background: none; color: var(--fg); font-size: 16px; cursor: pointer; }
   .ordered { margin-bottom: 16px; padding: 14px; border-radius: 14px; background: var(--accent); color: var(--accent-fg); font-size: 15px; }
   .ordered p { margin: 0 0 6px; } .ordered p:last-child { margin: 0; }
-  .step { margin-bottom: 12px; padding: 14px; border-radius: 14px; background: var(--field); font-size: 15px; }
-  .step h2 { display: flex; gap: 10px; align-items: center; margin: 0 0 8px; font-size: 16px; }
-  .step h2 span { flex: none; display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%;
-    background: var(--accent); color: var(--accent-fg); font-size: 14px; }
-  .step p { margin: 0 0 8px; } .step ul { margin: 0 0 8px; padding-left: 4px; list-style: none; }
-  .step > :last-child { margin-bottom: 0; }
-  .warn { padding: 10px 12px; border-radius: 10px; background: rgba(217, 48, 37, .12); }
-  .note { padding: 10px 12px; border-radius: 10px; background: var(--bg); }
-  .shot { display: block; width: 240px; max-width: 100%; margin: 12px auto 0; border-radius: 12px; cursor: zoom-in; }
-  .shot.wide { width: 100%; }
-  video.shot { width: 100%; max-width: 320px; cursor: auto; }
+  .stage { display: flex; gap: 12px; align-items: center; width: 100%; margin-bottom: 8px; padding: 12px; border: 0;
+    border-radius: 12px; background: var(--field); color: var(--fg); font: inherit; text-align: left; cursor: pointer; }
+  .stage small { display: block; color: var(--hint); font-size: 13px; }
+  .num { flex: none; display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%;
+    background: var(--accent); color: var(--accent-fg); font-size: 14px; font-weight: 600; }
+  .step-top { display: flex; justify-content: space-between; margin-bottom: 8px; color: var(--hint); font-size: 13px; }
+  .bar { display: flex; gap: 3px; margin-bottom: 14px; }
+  .bar span { flex: 1; height: 4px; border-radius: 2px; background: var(--field); } .bar .on { background: var(--accent); }
+  .act { margin: 0 0 12px; font-size: 19px; line-height: 1.3; }
+  #screen { font-size: 15px; } #screen p { margin: 0 0 8px; } #screen ul { margin: 0 0 8px; padding-left: 4px; list-style: none; }
+  .warn, .note { margin-bottom: 12px; padding: 10px 12px; border-radius: 10px; }
+  .warn { background: rgba(217, 48, 37, .12); } .note { background: var(--field); }
+  .warn > :last-child, .note > :last-child { margin-bottom: 0 !important; }
+  .shot { display: block; max-width: 100%; max-height: 58vh; margin: 0 auto 12px; border-radius: 12px; cursor: zoom-in; }
+  video.shot { width: 100%; max-width: 360px; cursor: auto; }
+  details { margin-bottom: 12px; } summary { margin-bottom: 8px; color: var(--accent); cursor: pointer; }
   .zoom { position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; padding: 12px; background: #000; }
   .zoom img { max-width: 100%; max-height: 100%; }
 </style>
@@ -85,7 +91,7 @@
 <div class="wrap" id="catalog">
   <h1>mobileedit.kz</h1>
   <p class="sub">Подписки на iOS/Android · с 2017 года · <a href="#" id="reviews">отзывы</a></p>
-  <button class="howto" id="howto">📲 Как установить</button>
+  <button class="sec" id="howto">📲 Как установить</button>
   <input id="q" type="search" placeholder="Поиск приложения">
   <div class="grid" id="grid"></div>
   <div class="combo" id="combo"></div>
@@ -97,14 +103,9 @@
 
 <div class="wrap" id="guide" hidden>
   <button class="back" id="back" aria-label="Назад">&#9665;</button>
-  <h1>Как установить программу на iPhone</h1>
-  <p class="sub">Нажмите на скриншот, чтобы увеличить</p>
-  <div id="ordered"></div>
-  <div id="steps"></div>
+  <div id="screen"></div>
 </div>
-<div class="bottom" id="guideBottom" hidden><div>
-  <button class="main" id="write">Написать менеджеру</button>
-</div></div>
+<div class="bottom" id="guideBottom" hidden><div class="btns" id="nav"></div></div>
 <div class="zoom" id="zoom" hidden><img alt=""></div>
 
 <script>
@@ -130,69 +131,81 @@ const MANAGER = "premiumresell";        // Telegram для заказов
 const REVIEWS = "https://t.me/otzyvymobileedit";
 
 // Инструкция по установке: текст из INSTRUCTION.md, картинки в instruction/.
-// html — готовая разметка шага; shots — скриншоты (wide — на всю ширину); video — ролик к шагу.
+// act — короткое действие крупно; warn — красное предупреждение и note — подсказка (видны всегда);
+// html — полный текст шага (под «Подробнее», если у шага есть картинки); chat — кнопка с готовым сообщением менеджеру.
+const STAGES = [
+  { title: "Выйти из своего Apple ID", short: "Подготовка", from: 1 },
+  { title: "Войти в наш Apple ID", short: "Вход", from: 6 },
+  { title: "Скачать программу", short: "Скачивание", from: 10 },
+  { title: "Вернуться в свой ID и отключить автозагрузки", short: "Возврат", from: 14 },
+];
 const STEPS = [
-  { title: "Удалить программу", html: `
-    <p>Удалите программу, за которую оплатили, и собираетесь устанавливать через нас.</p>
-    <p class="warn">‼️ После того как вы установите программы через нас, обратите внимание на пункты 15–16 ‼️</p>` },
-  { title: "Открыть App Store", html: `<p>Теперь приступаем к скачиванию. Идём в App Store ⬇️</p>`,
+  { act: "Удалите программу, которую купили",
+    warn: `‼️ После того как вы установите программы через нас, обратите внимание на пункты 15–16 ‼️`,
+    html: `<p>Удалите программу, за которую оплатили, и собираетесь устанавливать через нас.</p>` },
+  { act: "Откройте App Store", html: `<p>Теперь приступаем к скачиванию. Идём в App Store ⬇️</p>`,
     shots: [{ src: "photo-01", alt: "Главный экран iPhone, выделен значок App Store" }] },
-  { title: "Открыть профиль",
+  { act: "Нажмите на значок профиля справа вверху",
     shots: [{ src: "photo-02", alt: "App Store, вкладка Today, выделен значок профиля справа вверху" }] },
-  { title: "Прокрутить вниз",
+  { act: "Прокрутите экран вниз",
     shots: [{ src: "photo-03", alt: "Экран Account с вашим Apple ID: крутим вниз, чтобы выйти" }] },
-  { title: "Нажать Sign Out",
+  { act: "Нажмите Sign Out (Выйти)",
     shots: [{ src: "photo-04", alt: "Низ экрана Account, выделена кнопка Sign Out (или «Выйти»)" }] },
-  { title: "Вход в наш Apple ID", html: `
+  { act: "Войдите в наш Apple ID",
+    warn: `‼️ Прежде чем нажать на sign in, напишите нам заранее, что вы собираетесь заходить, так как мы можем быть не онлайн. Дождитесь нашего ответа, убедитесь, что мы можем вам выдать код, и только после этого заходите ‼️`,
+    chat: { label: "Написать «захожу»", text: "Здравствуйте! Собираюсь заходить в ваш Apple ID, вы на связи?" },
+    html: `
     <p>Как нажали sign out / выйти, поднимитесь снова наверх.</p>
     <p>Далее введите наши данные, которые мы вам отправили лично в WhatsApp / Telegram, и нажмите <b>sign in</b>.</p>
     <p><b>Для тех, у кого новый iOS:</b></p>
     <ul><li>✔️ Нажмите <b>sign in with Apple ID</b>.</li>
       <li>✔️ Далее выбираете <b>второй пункт</b>, не «Ваше Имя Фамилия».</li></ul>
-    <p>Далее уже вводите наши данные. Они у нас с вами в чате, указали стрелками Apple ID и пароль.</p>
-    <p class="warn">‼️ Прежде чем нажать на sign in, напишите нам заранее, что вы собираетесь заходить, так как мы можем быть не онлайн. Дождитесь нашего ответа, убедитесь, что мы можем вам выдать код, и только после этого заходите ‼️</p>` },
-  { title: "«Не получили код проверки»", html: `<p>Нажмите «не получили код проверки».</p>`,
+    <p>Далее уже вводите наши данные. Они у нас с вами в чате, указали стрелками Apple ID и пароль.</p>` },
+  { act: "Нажмите «Не получили код проверки?»", html: `<p>Нажмите «не получили код проверки».</p>`,
     shots: [{ src: "photo-06", alt: "Двухфакторная аутентификация, выделена ссылка «Не получили код проверки?»" }] },
-  { title: "Отправить код на номер", html: `<p>Отправляем код на номер.</p>`,
+  { act: "Выберите «Отправить код на номер …24»", html: `<p>Отправляем код на номер.</p>`,
     shots: [{ src: "photo-07", alt: "Окно «Не получили код?», выделен пункт «Отправить код на номер …24»" }] },
-  { title: "Получение и ввод кода", html: `
+  { act: "Напишите нам «код» и введите его",
+    chat: { label: "Написать «код»", text: "код" },
+    html: `
     <p>К нам придёт код. Как отправите его нам, напишите нам слово «код». Мы вам его отправим.</p>
     <p>Введите его ниже, и вы зайдёте в наш Apple ID автоматически.</p>`,
     shots: [{ src: "photo-08", alt: "Экран ввода шестизначного кода, отправленного на номер …24" }] },
-  { title: "Вы в нашем Apple ID", html: `
-    <p>Вы в нашем айди.</p>
-    <p class="note">‼️ Для тех, у кого новый iOS:<br>Нажмите на <b>Apps</b> и скачайте, пожалуйста, оттуда.</p>`,
+  { act: "Нажмите Purchased (Покупки)",
+    note: `‼️ Для тех, у кого новый iOS:<br>Нажмите на <b>Apps</b> и скачайте, пожалуйста, оттуда.`,
+    html: `<p>Вы в нашем айди.</p>`,
     shots: [{ src: "photo-09", alt: "Экран Account под нашим Apple ID, выделен пункт Purchased (или «Покупки»)" }] },
-  { title: "Открыть список покупок", html: `<p>Нажмите <b>My Purchases</b> (Мои покупки).</p>`,
+  { act: "Нажмите My Purchases (Мои покупки)",
     shots: [{ src: "photo-10", alt: "Экран All Purchases, выделен пункт My Purchases" }] },
-  { title: "Найти и скачать программу", html: `
-    <p>Ищем и скачиваем программу, за которую оплатили (возле них облако со стрелкой).</p>
-    <div class="warn"><p>❕❗️ <b>Внимание</b></p>
+  { act: "Найдите и скачайте купленную программу",
+    warn: `<p>❕❗️ <b>Внимание</b></p>
       <p>Для каждой купленной у нас программы мы открываем доступ именно для вас.</p>
-      <p>(!) Если вы скачиваете программу, для которой не покупали доступ, спустя время снимается полная оплата за программу с вашей кредитной карты. Будьте, пожалуйста, бдительнее.</p></div>`,
+      <p>(!) Если вы скачиваете программу, для которой не покупали доступ, спустя время снимается полная оплата за программу с вашей кредитной карты. Будьте, пожалуйста, бдительнее.</p>`,
+    html: `<p>Ищем и скачиваем программу, за которую оплатили (возле них облако со стрелкой).</p>`,
     shots: [{ src: "photo-11", alt: "Список покупок с полем Search, возле программ значок облака со стрелкой" }] },
-  { title: "Восстановить полную версию", html: `
+  { act: "Восстановите полную версию, не выходя из нашего ID", html: `
     <p>Как скачали программу, не выходим сразу с нашего айди.<br>
       Нужно восстановить программу на полную версию, находясь в нашем айди.</p>
     <p>Инструкции отправляются каждому лично (проверяем WhatsApp / Telegram).</p>` },
-  { title: "Выход из нашего ID и возврат в свой", html: `
-    <p>Как убедились, что всё открыто в программе, выходите с нашего айди и обратно в свой. Выходим с нашего айди так же, как и выходили со своего аккаунта (шаги 3–5).</p>
-    <p class="warn">‼️ <b>ВАЖНО ОТКЛЮЧИТЬ ФУНКЦИИ НИЖЕ</b> ⬇️ Переустановка программ по причине не отключения ПЛАТНАЯ за полную стоимость. ‼️</p>` },
-  { title: "Отключить автозагрузки", html: `
+  { act: "Выйдите из нашего ID и войдите в свой",
+    warn: `‼️ <b>ВАЖНО ОТКЛЮЧИТЬ ФУНКЦИИ НИЖЕ</b> ⬇️ Переустановка программ по причине не отключения ПЛАТНАЯ за полную стоимость. ‼️`,
+    html: `<p>Как убедились, что всё открыто в программе, выходите с нашего айди и обратно в свой. Выходим с нашего айди так же, как и выходили со своего аккаунта (шаги 3–5).</p>` },
+  { act: "Отключите 3 функции: Настройки → App Store",
+    warn: `⚠️ Обратная установка программ по причине не отключения данных функций платная.`,
+    note: `<p>☑️ <b>Отключаем:</b></p>
+      <ul><li>🔘 Приложения</li><li>🔘 Обновления ПО</li><li>🔘 Сгружать неиспользуемые</li></ul>`,
+    html: `
     <p>✅ После того как вы завершили установку и переключились на свой Apple ID, ВАЖНО отключить функции ниже, чтобы проходить с программами долгий срок ⬇️</p>
-    <p>☑️ <b>Отключаем:</b></p>
-    <ul><li>🔘 Приложения</li><li>🔘 Обновления ПО</li><li>🔘 Сгружать неиспользуемые</li></ul>
     <p>Также проверяйте данные функции, выключены ли они, после каждого обновления на новый iOS (программное обеспечение, ПО), так как они могут включиться автоматически.</p>
     <p>☑️ Если у вас нет этих кнопок, убедитесь, что вы находитесь в своём Apple ID в App Store.</p>
-    <p>☑️ Если они не активны, уберите телефон с режима энергосбережения.</p>
-    <p class="warn">⚠️ Обратная установка программ по причине не отключения данных функций платная.</p>`,
+    <p>☑️ Если они не активны, уберите телефон с режима энергосбережения.</p>`,
     video: { src: "video-step-15.mp4", poster: "video-step-15-frame-a-settings-icon.jpg" } },
-  { title: "Проверка «Управления подписками»", html: `
+  { act: "Проверьте, нет ли активной подписки в своём Apple ID", html: `
     <p>☝️ Важное про «Управление подписками».</p>
     <p>После того как вы всё установили, вы обратно заходите в свой Apple ID. Теперь важно проверить в своём Apple ID, нет ли у вас активной подписки на ту программу/ы, которые вы только что установили через наши данные.</p>
     <p>Проверяем следующим образом, и повторяю: в своём Apple ID ⬇️</p>`,
-    shots: [{ src: "photo-13", wide: true, alt: "App Store → профиль → пункт Subscriptions. Если такого пункта нет, активных подписок нет" },
-            { src: "photo-14", wide: true, alt: "Раздел Subscriptions: в ACTIVE отмените подписку на программу, в EXPIRED ничего не трогаем" }] },
+    shots: [{ src: "photo-13", alt: "App Store → профиль → пункт Subscriptions. Если такого пункта нет, активных подписок нет" },
+            { src: "photo-14", alt: "Раздел Subscriptions: в ACTIVE отмените подписку на программу, в EXPIRED ничего не трогаем" }] },
 ];
 
 const tg = window.Telegram && window.Telegram.WebApp;
@@ -264,48 +277,119 @@ function orderText() {
   return `Здравствуйте! Хочу оформить подписки:\n${lines.join("\n")}`;
 }
 
-function renderSteps() {
-  $("steps").innerHTML = STEPS.map((s, i) => `
-    <section class="step">
-      <h2><span>${i + 1}</span>${esc(s.title)}</h2>
-      ${s.html || ""}
-      ${(s.shots || []).map((p) => `<img class="shot ${p.wide ? "wide" : ""}" loading="lazy"
-          src="instruction/${p.src}.jpg" alt="${esc(p.alt)}">`).join("")}
-      ${s.video ? `<video class="shot" controls playsinline preload="none"
-          poster="instruction/${s.video.poster}" src="instruction/${s.video.src}"></video>` : ""}
-    </section>`).join("");
+const chatUrl = (text) => `https://t.me/${MANAGER}?text=${encodeURIComponent(text)}`;
+const stageOf = (n) => STAGES.filter((s) => s.from <= n).length;  // номер этапа шага n, с 1
+
+// Текущий шаг запоминаем, чтобы клиент вернулся на него из App Store. Через 6 часов забываем.
+const SAVE_KEY = "guideStep", SAVE_MS = 6 * 3600 * 1000;
+function saveStep(n) {
+  try { n ? localStorage.setItem(SAVE_KEY, JSON.stringify({ n, t: Date.now() })) : localStorage.removeItem(SAVE_KEY); } catch (e) {}
+}
+function savedStep() {
+  try { const s = JSON.parse(localStorage.getItem(SAVE_KEY)); return s && Date.now() - s.t < SAVE_MS ? s.n : null; }
+  catch (e) { return null; }
+}
+
+// Экран инструкции: "order" — заказ, "overview" — этапы, число — шаг
+let view = null, catalogScroll = 0;
+
+function renderGuide() {
+  const nav = $("nav");
+  if (view === "order") {
+    const r = calc();
+    $("screen").innerHTML = `<h1>Ваш заказ</h1>
+      <div class="ordered"><p><b>${esc(r.apps.map((a) => a.name).join(", "))}</b></p>
+        <p>${r.total === null ? "Цену уточнит менеджер" : "Итого: " + money(r.total)}</p></div>
+      <p>Менеджер пришлёт данные для входа в чате. Когда получите их — откройте «Как установить».</p>`;
+    nav.innerHTML = `<button class="sec" id="toGuide">Как установить</button><button class="main" id="write">Написать менеджеру</button>`;
+    $("write").onclick = () => openLink(chatUrl(orderText()));
+    $("toGuide").onclick = () => go("overview");
+    return;
+  }
+
+  if (view === "overview") {
+    const saved = savedStep();
+    $("screen").innerHTML = `<h1>Как установить программу на iPhone</h1>
+      <p class="sub">${STAGES.length} этапа · ${STEPS.length} шагов</p>` +
+      STAGES.map((s, i) => `<button class="stage" data-n="${s.from}"><span class="num">${i + 1}</span>
+        <span>${esc(s.title)}<small>шаги ${s.from}–${i + 1 < STAGES.length ? STAGES[i + 1].from - 1 : STEPS.length}</small></span></button>`).join("");
+    document.querySelectorAll(".stage").forEach((b) => b.onclick = () => go(+b.dataset.n));
+    nav.innerHTML = `<button class="main" id="start">${saved ? `Продолжить с шага ${saved}` : "Начать"}</button>`;
+    $("start").onclick = () => go(saved || 1);
+    return;
+  }
+
+  const n = view, s = STEPS[n - 1];
+  const media = (s.shots || []).map((p) => `<img class="shot" src="instruction/${p.src}.jpg" alt="${esc(p.alt)}">`).join("") +
+    (s.video ? `<video class="shot" controls playsinline preload="none"
+      poster="instruction/${s.video.poster}" src="instruction/${s.video.src}"></video>` : "");
+  $("screen").innerHTML = `
+    <div class="step-top"><span>Этап ${stageOf(n)} · ${STAGES[stageOf(n) - 1].short}</span><span>Шаг ${n} из ${STEPS.length}</span></div>
+    <div class="bar">${STEPS.map((_, i) => `<span class="${i < n ? "on" : ""}"></span>`).join("")}</div>
+    <h2 class="act">${esc(s.act)}</h2>
+    ${s.warn ? `<div class="warn">${s.warn}</div>` : ""}
+    ${s.note ? `<div class="note">${s.note}</div>` : ""}
+    ${s.chat ? `<button class="sec" id="chat">✉️ ${esc(s.chat.label)}</button>` : ""}
+    ${media}
+    ${!s.html ? "" : media ? `<details><summary>Подробнее</summary>${s.html}</details>` : s.html}`;
+  if (s.chat) $("chat").onclick = () => openLink(chatUrl(s.chat.text));
   document.querySelectorAll("img.shot").forEach((img) => img.onclick = () => {
     $("zoom").querySelector("img").src = img.src;
     $("zoom").hidden = false;
   });
+  nav.innerHTML = `<button class="sec" id="prev">Назад</button>
+    <button class="main" id="next">${n === STEPS.length ? "Готово" : "Далее"}</button>`;
+  $("prev").onclick = () => go(n > 1 ? n - 1 : "overview");
+  $("next").onclick = () => n < STEPS.length ? go(n + 1) : finish();
+  saveStep(n);
 }
 
-// Инструкция открывается кнопкой «Как установить» или после «Заказать» — тогда с плашкой заказа и кнопкой в чат
-let catalogScroll = 0;
-function showGuide(withOrder) {
-  catalogScroll = window.scrollY;
-  const r = calc();
-  $("ordered").innerHTML = withOrder ? `<div class="ordered">
-      <p>Ваш заказ: <b>${esc(r.apps.map((a) => a.name).join(", "))}</b> — ${r.total === null ? "цену уточнит менеджер" : money(r.total)}</p>
-      <p>Менеджер пришлёт данные для входа в чате. Ниже — как установить.</p></div>` : "";
-  $("catalog").hidden = $("catalogBottom").hidden = true;
-  $("guide").hidden = false;
-  $("guideBottom").hidden = !withOrder;
+function go(v) {
+  view = v;
+  haptic();
+  renderGuide();
   window.scrollTo(0, 0);
-  if (tg) tg.BackButton.show();
 }
 
-function back() {
-  if (!$("zoom").hidden) { $("zoom").hidden = true; return; }
+function showGuide(v) {
+  catalogScroll = window.scrollY;
+  $("catalog").hidden = $("catalogBottom").hidden = true;
+  $("guide").hidden = $("guideBottom").hidden = false;
+  if (tg) tg.BackButton.show();
+  go(v);
+}
+
+function closeGuide() {
+  view = null;
   $("guide").hidden = $("guideBottom").hidden = true;
   $("catalog").hidden = $("catalogBottom").hidden = false;
   window.scrollTo(0, catalogScroll);
   if (tg) tg.BackButton.hide();
 }
 
-$("order").onclick = () => showGuide(true);
-$("howto").onclick = () => showGuide(false);
-$("write").onclick = () => openLink(`https://t.me/${MANAGER}?text=${encodeURIComponent(orderText())}`);
+function finish() { saveStep(null); closeGuide(); }
+
+// Назад: закрыть фото → с шага на этапы → из этапов или заказа в каталог
+function back() {
+  if (!$("zoom").hidden) { $("zoom").hidden = true; return; }
+  if (typeof view === "number") go("overview");
+  else closeGuide();
+}
+
+// Свайп влево/вправо листает шаги
+let touch = null;
+$("guide").addEventListener("touchstart", (e) => { touch = e.touches[0]; }, { passive: true });
+$("guide").addEventListener("touchend", (e) => {
+  if (!touch || typeof view !== "number") return;
+  const dx = e.changedTouches[0].clientX - touch.clientX, dy = e.changedTouches[0].clientY - touch.clientY;
+  touch = null;
+  if (Math.abs(dx) < 60 || Math.abs(dx) < 2 * Math.abs(dy)) return;
+  if (dx < 0 && view < STEPS.length) go(view + 1);
+  if (dx > 0) go(view > 1 ? view - 1 : "overview");
+}, { passive: true });
+
+$("order").onclick = () => showGuide("order");
+$("howto").onclick = () => showGuide("overview");
 $("back").onclick = back;
 $("zoom").onclick = () => { $("zoom").hidden = true; };
 if (tg) tg.BackButton.onClick(back);
@@ -313,7 +397,8 @@ if (tg) tg.BackButton.onClick(back);
 $("q").oninput = (e) => { state.q = e.target.value; render(); };
 $("reviews").onclick = (e) => { e.preventDefault(); openLink(REVIEWS); };
 
-renderSteps();
+const resume = savedStep();  // вернулись из App Store — открываем тот же шаг
+if (resume) showGuide(resume);
 
 render();
 </script>
