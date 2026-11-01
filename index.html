@@ -56,20 +56,56 @@
   .main { display: block; width: 100%; padding: 15px; border: 0; border-radius: 10px;
     background: var(--accent); color: var(--accent-fg); font: inherit; font-weight: 600; cursor: pointer; }
   .main:disabled { opacity: .35; cursor: default; }
+
+  [hidden] { display: none !important; }
+
+  /* Инструкция по установке */
+  .howto { display: block; width: 100%; margin-bottom: 14px; padding: 12px; border: 1.5px solid var(--accent);
+    border-radius: 10px; background: none; color: var(--accent); font: inherit; font-weight: 600; cursor: pointer; }
+  .back { width: 32px; height: 32px; margin-bottom: 12px; border: 1.5px solid var(--fg); border-radius: 8px;
+    background: none; color: var(--fg); font-size: 16px; cursor: pointer; }
+  .ordered { margin-bottom: 16px; padding: 14px; border-radius: 14px; background: var(--accent); color: var(--accent-fg); font-size: 15px; }
+  .ordered p { margin: 0 0 6px; } .ordered p:last-child { margin: 0; }
+  .step { margin-bottom: 12px; padding: 14px; border-radius: 14px; background: var(--field); font-size: 15px; }
+  .step h2 { display: flex; gap: 10px; align-items: center; margin: 0 0 8px; font-size: 16px; }
+  .step h2 span { flex: none; display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%;
+    background: var(--accent); color: var(--accent-fg); font-size: 14px; }
+  .step p { margin: 0 0 8px; } .step ul { margin: 0 0 8px; padding-left: 4px; list-style: none; }
+  .step > :last-child { margin-bottom: 0; }
+  .warn { padding: 10px 12px; border-radius: 10px; background: rgba(217, 48, 37, .12); }
+  .note { padding: 10px 12px; border-radius: 10px; background: var(--bg); }
+  .shot { display: block; width: 240px; max-width: 100%; margin: 12px auto 0; border-radius: 12px; cursor: zoom-in; }
+  .shot.wide { width: 100%; }
+  video.shot { width: 100%; max-width: 320px; cursor: auto; }
+  .zoom { position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; padding: 12px; background: #000; }
+  .zoom img { max-width: 100%; max-height: 100%; }
 </style>
 </head>
 <body>
-<div class="wrap">
+<div class="wrap" id="catalog">
   <h1>mobileedit.kz</h1>
   <p class="sub">Подписки на iOS/Android · с 2017 года · <a href="#" id="reviews">отзывы</a></p>
+  <button class="howto" id="howto">📲 Как установить</button>
   <input id="q" type="search" placeholder="Поиск приложения">
   <div class="grid" id="grid"></div>
   <div class="combo" id="combo"></div>
 </div>
-<div class="bottom"><div>
+<div class="bottom" id="catalogBottom"><div>
   <div class="total" id="total"></div>
   <button class="main" id="order"></button>
 </div></div>
+
+<div class="wrap" id="guide" hidden>
+  <button class="back" id="back" aria-label="Назад">&#9665;</button>
+  <h1>Как установить программу на iPhone</h1>
+  <p class="sub">Нажмите на скриншот, чтобы увеличить</p>
+  <div id="ordered"></div>
+  <div id="steps"></div>
+</div>
+<div class="bottom" id="guideBottom" hidden><div>
+  <button class="main" id="write">Написать менеджеру</button>
+</div></div>
+<div class="zoom" id="zoom" hidden><img alt=""></div>
 
 <script>
 // Прайс (тенге), подписка на 1 год. forever — бессрочная (∞), noCombo — не входит в комбо.
@@ -92,6 +128,73 @@ const CATALOG = [
 const COMBO = { 2: 10000, 3: 14000, 4: 18000, 5: 22000 };
 const MANAGER = "premiumresell";        // Telegram для заказов
 const REVIEWS = "https://t.me/otzyvymobileedit";
+
+// Инструкция по установке: текст из INSTRUCTION.md, картинки в instruction/.
+// html — готовая разметка шага; shots — скриншоты (wide — на всю ширину); video — ролик к шагу.
+const STEPS = [
+  { title: "Удалить программу", html: `
+    <p>Удалите программу, за которую оплатили, и собираетесь устанавливать через нас.</p>
+    <p class="warn">‼️ После того как вы установите программы через нас, обратите внимание на пункты 14–15 ‼️</p>` },
+  { title: "Открыть App Store", html: `<p>Теперь приступаем к скачиванию. Идём в App Store ⬇️</p>`,
+    shots: [{ src: "photo-01", alt: "Главный экран iPhone, выделен значок App Store" }] },
+  { title: "Открыть профиль",
+    shots: [{ src: "photo-02", alt: "App Store, вкладка Today, выделен значок профиля справа вверху" }] },
+  { title: "Прокрутить вниз",
+    shots: [{ src: "photo-03", alt: "Экран Account с вашим Apple ID: крутим вниз, чтобы выйти" }] },
+  { title: "Нажать Sign Out",
+    shots: [{ src: "photo-04", alt: "Низ экрана Account, выделена кнопка Sign Out (или «Выйти»)" }] },
+  { title: "Вход в наш Apple ID", html: `
+    <p>Как нажали sign out / выйти, поднимитесь снова наверх.</p>
+    <p>Далее введите наши данные, которые мы вам отправили лично в WhatsApp / Telegram, и нажмите <b>sign in</b>.</p>
+    <p><b>Для тех, у кого новый iOS:</b></p>
+    <ul><li>✔️ Нажмите <b>sign in with Apple ID</b>.</li>
+      <li>✔️ Далее выбираете <b>второй пункт</b>, не «Ваше Имя Фамилия».</li></ul>
+    <p>Далее уже вводите наши данные. Они у нас с вами в чате, указали стрелками Apple ID и пароль.</p>
+    <p class="warn">‼️ Прежде чем нажать на sign in, напишите нам заранее, что вы собираетесь заходить, так как мы можем быть не онлайн. Дождитесь нашего ответа, убедитесь, что мы можем вам выдать код, и только после этого заходите ‼️</p>` },
+  { title: "«Не получили код проверки»", html: `<p>Нажмите «не получили код проверки».</p>`,
+    shots: [{ src: "photo-06", alt: "Двухфакторная аутентификация, выделена ссылка «Не получили код проверки?»" }] },
+  { title: "Отправить код на номер", html: `<p>Отправляем код на номер.</p>`,
+    shots: [{ src: "photo-07", alt: "Окно «Не получили код?», выделен пункт «Отправить код на номер …24»" }] },
+  { title: "Получение и ввод кода", html: `
+    <p>К нам придёт код. Как отправите его нам, напишите нам слово «код». Мы вам его отправим.</p>
+    <p>Введите его ниже, и вы зайдёте в наш Apple ID автоматически.</p>`,
+    shots: [{ src: "photo-08", alt: "Экран ввода шестизначного кода, отправленного на номер …24" }] },
+  { title: "Вы в нашем Apple ID", html: `
+    <p>Вы в нашем айди.</p>
+    <p class="note">‼️ Для тех, у кого новый iOS:<br>Нажмите на <b>Apps</b> и скачайте, пожалуйста, оттуда.</p>`,
+    shots: [{ src: "photo-09", alt: "Экран Account под нашим Apple ID, выделен пункт Purchased (или «Покупки»)" }] },
+  { title: "Открыть список покупок", html: `
+    <p class="note">‼️ Для тех, у кого новый iOS:<br>Нажмите на <b>Apps</b> и скачайте, пожалуйста, оттуда.</p>`,
+    shots: [{ src: "photo-10", alt: "Экран All Purchases, выделен пункт My Purchases" }] },
+  { title: "Найти и скачать программу", html: `
+    <p>Ищем и скачиваем программу, за которую оплатили (возле них облако со стрелкой).</p>
+    <div class="warn"><p>❕❗️ <b>Внимание</b></p>
+      <p>Для каждой купленной у нас программы мы открываем доступ именно для вас.</p>
+      <p>(!) Если вы скачиваете программу, для которой не покупали доступ, спустя время снимается полная оплата за программу с вашей кредитной карты. Будьте, пожалуйста, бдительнее.</p></div>`,
+    shots: [{ src: "photo-11", alt: "Список покупок с полем Search, возле программ значок облака со стрелкой" }] },
+  { title: "Восстановить полную версию", html: `
+    <p>Как скачали программу, не выходим сразу с нашего айди.<br>
+      Нужно восстановить программу на полную версию, находясь в нашем айди.</p>
+    <p>Инструкции отправляются каждому лично (проверяем WhatsApp / Telegram).</p>` },
+  { title: "Выход из нашего ID и возврат в свой", html: `
+    <p>Как убедились, что всё открыто в программе, выходите с нашего айди и обратно в свой. Выходим с нашего айди так же, как и выходили со своего аккаунта (шаги 3–5).</p>
+    <p class="warn">‼️ <b>ВАЖНО ОТКЛЮЧИТЬ ФУНКЦИИ НИЖЕ</b> ⬇️ Переустановка программ по причине не отключения ПЛАТНАЯ за полную стоимость. ‼️</p>` },
+  { title: "Отключить автозагрузки", html: `
+    <p>✅ После того как вы завершили установку и переключились на свой Apple ID, ВАЖНО отключить функции ниже, чтобы проходить с программами долгий срок ⬇️</p>
+    <p>☑️ <b>Отключаем:</b></p>
+    <ul><li>🔘 Приложения</li><li>🔘 Обновления ПО</li><li>🔘 Сгружать неиспользуемые</li></ul>
+    <p>Также проверяйте данные функции, выключены ли они, после каждого обновления на новый iOS (программное обеспечение, ПО), так как они могут включиться автоматически.</p>
+    <p>☑️ Если у вас нет этих кнопок, убедитесь, что вы находитесь в своём Apple ID в App Store.</p>
+    <p>☑️ Если они не активны, уберите телефон с режима энергосбережения.</p>
+    <p class="warn">⚠️ Обратная установка программ по причине не отключения данных функций платная.</p>`,
+    video: { src: "video-step-15.mp4", poster: "video-step-15-frame-a-settings-icon.jpg" } },
+  { title: "Проверка «Управления подписками»", html: `
+    <p>☝️ Важное про «Управление подписками».</p>
+    <p>После того как вы всё установили, вы обратно заходите в свой Apple ID. Теперь важно проверить в своём Apple ID, нет ли у вас активной подписки на ту программу/ы, которые вы только что установили через наши данные.</p>
+    <p>Проверяем следующим образом, и повторяю: в своём Apple ID ⬇️</p>`,
+    shots: [{ src: "photo-13", wide: true, alt: "App Store → профиль → пункт Subscriptions. Если такого пункта нет, активных подписок нет" },
+            { src: "photo-14", wide: true, alt: "Раздел Subscriptions: в ACTIVE отмените подписку на программу, в EXPIRED ничего не трогаем" }] },
+];
 
 const tg = window.Telegram && window.Telegram.WebApp;
 const inTelegram = !!(tg && tg.platform && tg.platform !== "unknown");
@@ -149,7 +252,7 @@ function render() {
     : `Выбрано: ${r.apps.length} · итого <b>${money(r.total)}</b>${r.combo ? " (комбо)" : ""}`;
 }
 
-$("order").onclick = () => {
+function orderText() {
   const r = calc();
   const lines = r.total === null
     ? [r.apps.map((a) => a.name).join(", ")]
@@ -159,12 +262,59 @@ $("order").onclick = () => {
         r.outside.map((a) => `${a.name} — ${money(a.price)}`).join("\n"),
         `Итого: ${money(r.total)}`,
       ].filter(Boolean);
-  const text = `Здравствуйте! Хочу оформить подписки:\n${lines.join("\n")}`;
-  openLink(`https://t.me/${MANAGER}?text=${encodeURIComponent(text)}`);
-};
+  return `Здравствуйте! Хочу оформить подписки:\n${lines.join("\n")}`;
+}
+
+function renderSteps() {
+  $("steps").innerHTML = STEPS.map((s, i) => `
+    <section class="step">
+      <h2><span>${i + 1}</span>${esc(s.title)}</h2>
+      ${s.html || ""}
+      ${(s.shots || []).map((p) => `<img class="shot ${p.wide ? "wide" : ""}" loading="lazy"
+          src="instruction/${p.src}.jpg" alt="${esc(p.alt)}">`).join("")}
+      ${s.video ? `<video class="shot" controls playsinline preload="none"
+          poster="instruction/${s.video.poster}" src="instruction/${s.video.src}"></video>` : ""}
+    </section>`).join("");
+  document.querySelectorAll("img.shot").forEach((img) => img.onclick = () => {
+    $("zoom").querySelector("img").src = img.src;
+    $("zoom").hidden = false;
+  });
+}
+
+// Инструкция открывается кнопкой «Как установить» или после «Заказать» — тогда с плашкой заказа и кнопкой в чат
+let catalogScroll = 0;
+function showGuide(withOrder) {
+  catalogScroll = window.scrollY;
+  const r = calc();
+  $("ordered").innerHTML = withOrder ? `<div class="ordered">
+      <p>Ваш заказ: <b>${esc(r.apps.map((a) => a.name).join(", "))}</b> — ${r.total === null ? "цену уточнит менеджер" : money(r.total)}</p>
+      <p>Менеджер пришлёт данные для входа в чате. Ниже — как установить.</p></div>` : "";
+  $("catalog").hidden = $("catalogBottom").hidden = true;
+  $("guide").hidden = false;
+  $("guideBottom").hidden = !withOrder;
+  window.scrollTo(0, 0);
+  if (tg) tg.BackButton.show();
+}
+
+function back() {
+  if (!$("zoom").hidden) { $("zoom").hidden = true; return; }
+  $("guide").hidden = $("guideBottom").hidden = true;
+  $("catalog").hidden = $("catalogBottom").hidden = false;
+  window.scrollTo(0, catalogScroll);
+  if (tg) tg.BackButton.hide();
+}
+
+$("order").onclick = () => showGuide(true);
+$("howto").onclick = () => showGuide(false);
+$("write").onclick = () => openLink(`https://t.me/${MANAGER}?text=${encodeURIComponent(orderText())}`);
+$("back").onclick = back;
+$("zoom").onclick = () => { $("zoom").hidden = true; };
+if (tg) tg.BackButton.onClick(back);
 
 $("q").oninput = (e) => { state.q = e.target.value; render(); };
 $("reviews").onclick = (e) => { e.preventDefault(); openLink(REVIEWS); };
+
+renderSteps();
 
 render();
 </script>
