@@ -73,7 +73,7 @@
 
 <script>
 // Прайс (тенге), подписка на 1 год. forever — бессрочная (∞), noCombo — не входит в комбо.
-// icon — файл в icons/ (иконки из App Store); без icon показывается первая буква на фоне color.
+// icon — файл в icons/ (иконки из App Store).
 const CATALOG = [
   { name: "Persona",     icon: "persona",    price: 6000, desc: "Бьюти-камера и ретушь лица на фото и видео" },
   { name: "InShot Pro",  icon: "inshot",     price: 4690, desc: "Монтаж видео: обрезка, музыка, скорость, эффекты" },
@@ -85,7 +85,7 @@ const CATALOG = [
   { name: "Dazz Cam",    icon: "dazzcam",    price: 3690, forever: true, desc: "Ретро-камера с эффектами плёнки" },
   { name: "VSCO Plus",   icon: "vsco",       price: 5600, desc: "Фильтры и редактор фото и видео VSCO" },
   { name: "Lightroom",   icon: "lightroom",  price: 3190, desc: "Обработка фото от Adobe с ИИ-инструментами" },
-  { name: "Moment",      color: "#6b7280",   price: 3090, forever: true },
+  { name: "Moment",      icon: "moment",     price: 3090, forever: true, desc: "Профессиональная камера с ручными настройками" },
   { name: "FaceApp",     icon: "faceapp",    price: 6500, noCombo: true, desc: "ИИ-редактор селфи: фильтры, фоны, эффекты" },
 ];
 // Комбо: цена за N программ
@@ -125,10 +125,9 @@ function render() {
   const items = CATALOG.filter((a) => a.name.toLowerCase().includes(q));
   $("grid").innerHTML = items.length ? items.map((a) => `
     <button class="card ${state.picked.has(a.name) ? "sel" : ""}" data-name="${esc(a.name)}">
-      ${a.icon ? `<img class="logo" src="icons/${a.icon}.jpg" alt="">`
-               : `<span class="logo" style="background:${a.color}">${esc(a.name[0])}</span>`}
+      <img class="logo" src="icons/${a.icon}.jpg" alt="">
       <b>${esc(a.name)}</b>
-      ${a.desc ? `<span class="desc">${esc(a.desc)}</span>` : ""}
+      <span class="desc">${esc(a.desc)}</span>
       <span class="price">${money(a.price)}</span>
       <small>${[a.forever ? "∞ навсегда" : "1 год", a.noCombo && "вне комбо"].filter(Boolean).join(" · ")}</small>
     </button>`).join("") : `<div class="empty">Ничего не нашлось</div>`;
