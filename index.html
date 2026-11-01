@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>mobileedit.kz</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  /* Цвета берём из темы Telegram (светлая/тёмная); вне Telegram — светлая тема */
+  :root {
+    --bg: var(--tg-theme-bg-color, #ffffff);
+    --fg: var(--tg-theme-text-color, #000000);
+    --hint: var(--tg-theme-hint-color, #8a8a8e);
+    --field: var(--tg-theme-secondary-bg-color, #f2f2f4);
+    --accent: var(--tg-theme-button-color, #2481cc);
+    --accent-fg: var(--tg-theme-button-text-color, #ffffff);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--fg);
+    font: 16px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  .wrap { max-width: 480px; margin: 0 auto; padding: 16px 16px 120px; }
+  h1 { font-size: 22px; font-weight: 700; margin: 0 0 2px; }
+  .sub { color: var(--hint); font-size: 14px; margin: 0 0 14px; }
+  .sub a { color: var(--accent); text-decoration: none; }
+
+  input { width: 100%; margin-bottom: 14px; padding: 12px; border: 0; border-radius: 10px;
+    background: var(--field); color: var(--fg); font: inherit; }
+
+  .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .card { position: relative; display: flex; flex-direction: column; gap: 6px; padding: 12px;
+    border: 2px solid transparent; border-radius: 14px; background: var(--field); color: var(--fg);
+    font: inherit; text-align: left; cursor: pointer; }
+  .card.sel { border-color: var(--accent); }
+  .card.sel::after { content: "✓"; position: absolute; top: 10px; right: 10px; display: grid; place-items: center;
+    width: 22px; height: 22px; border-radius: 50%; background: var(--accent); color: var(--accent-fg); font-size: 13px; }
+  .logo { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 12px;
+    color: #fff; font-size: 20px; font-weight: 700; }
+  .card b { font-size: 15px; }
+  .card small { color: var(--hint); font-size: 12px; }
+  .price { font-size: 14px; font-weight: 600; }
+  .empty { grid-column: 1 / -1; padding: 32px 0; color: var(--hint); text-align: center; }
+
+  .combo { margin-top: 20px; padding: 14px; background: var(--field); border-radius: 14px; font-size: 15px; }
+  .combo h2 { margin: 0 0 8px; font-size: 17px; }
+  .combo p { display: flex; justify-content: space-between; margin: 4px 0; }
+  .combo small { display: block; margin-top: 8px; color: var(--hint); font-size: 13px; }
+
+  .bottom { position: fixed; left: 0; right: 0; bottom: 0; padding: 10px 16px calc(12px + env(safe-area-inset-bottom));
+    background: var(--bg); box-shadow: 0 -1px 0 var(--field); }
+  .bottom > div { max-width: 448px; margin: 0 auto; }
+  .total { margin-bottom: 8px; font-size: 14px; color: var(--hint); }
+  .total b { color: var(--fg); }
+  .main { display: block; width: 100%; padding: 15px; border: 0; border-radius: 10px;
+    background: var(--accent); color: var(--accent-fg); font: inherit; font-weight: 600; cursor: pointer; }
+  .main:disabled { opacity: .35; cursor: default; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>mobileedit.kz</h1>
+  <p class="sub">Подписки на iOS/Android · с 2017 года · <a href="#" id="reviews">отзывы</a></p>
+  <input id="q" type="search" placeholder="Поиск приложения">
+  <div class="grid" id="grid"></div>
+  <div class="combo" id="combo"></div>
+</div>
+<div class="bottom"><div>
+  <div class="total" id="total"></div>
+  <button class="main" id="order"></button>
+</div></div>
+
+<script>
+// Прайс (тенге), подписка на 1 год. forever — бессрочная (∞), noCombo — не входит в комбо.
+const CATALOG = [
+  { name: "Persona",     color: "#ff6fa8", price: 6000 },
+  { name: "InShot Pro",  color: "#f0435a", price: 4690 },
+  { name: "Reels App",   color: "#c13584", price: 6000 },
+  { name: "Leto",        color: "#f5a524", price: 6000 },
+  { name: "SubMe",       color: "#3b82f6", price: 6000 },
+  { name: "500 Stories", color: "#8b5cf6", price: 6000 },
+  { name: "Mojo",        color: "#1fb58f", price: 6000 },
+  { name: "Dazz Cam",    color: "#e8a33c", price: 3690, forever: true },
+  { name: "VSCO Plus",   color: "#111111", price: 5600 },
+  { name: "Lightroom",   color: "#1473e6", price: 3190 },
+  { name: "Moment",      color: "#6b7280", price: 3090, forever: true },
+  { name: "FaceApp",     color: "#2b2b2b", price: 6500, noCombo: true },
+];
+// Комбо: цена за N программ
+const COMBO = { 2: 10000, 3: 14000, 4: 18000, 5: 22000 };
+const MANAGER = "premiumresell";        // Telegram для заказов
+const REVIEWS = "https://t.me/otzyvymobileedit";
+
+const tg = window.Telegram && window.Telegram.WebApp;
+const inTelegram = !!(tg && tg.platform && tg.platform !== "unknown");
+if (tg) { tg.ready(); tg.expand(); }
+
+const state = { q: "", picked: new Set() };
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const money = (n) => n.toLocaleString("ru-RU") + " ₸";
+const programs = (n) => `${n} ${n >= 5 ? "программ" : "программы"}`;
+const haptic = () => { try { tg.HapticFeedback.selectionChanged(); } catch (e) {} };
+
+function openLink(url) {
+  if (inTelegram && url.startsWith("https://t.me/")) tg.openTelegramLink(url);
+  else window.open(url, "_blank");
+}
+
+// Итог заказа: комбо берём, только если оно дешевле суммы; больше 5 программ — цену уточняет менеджер
+function calc() {
+  const apps = CATALOG.filter((a) => state.picked.has(a.name));
+  const inCombo = apps.filter((a) => !a.noCombo), outside = apps.filter((a) => a.noCombo);
+  const sum = (list) => list.reduce((s, a) => s + a.price, 0);
+  const n = inCombo.length;
+  if (n > 5) return { apps, total: null };
+  const combo = COMBO[n] && COMBO[n] < sum(inCombo) ? COMBO[n] : null;
+  return { apps, inCombo, outside, combo, total: (combo || sum(inCombo)) + sum(outside) };
+}
+
+function render() {
+  const q = state.q.trim().toLowerCase();
+  const items = CATALOG.filter((a) => a.name.toLowerCase().includes(q));
+  $("grid").innerHTML = items.length ? items.map((a) => `
+    <button class="card ${state.picked.has(a.name) ? "sel" : ""}" data-name="${esc(a.name)}">
+      <span class="logo" style="background:${a.color}">${esc(a.name[0])}</span>
+      <b>${esc(a.name)}</b>
+      <span class="price">${money(a.price)}</span>
+      <small>${[a.forever ? "∞ навсегда" : "1 год", a.noCombo && "вне комбо"].filter(Boolean).join(" · ")}</small>
+    </button>`).join("") : `<div class="empty">Ничего не нашлось</div>`;
+  document.querySelectorAll(".card").forEach((b) => b.onclick = () => {
+    const name = b.dataset.name;
+    state.picked.has(name) ? state.picked.delete(name) : state.picked.add(name);
+    haptic(); render();
+  });
+
+  $("combo").innerHTML = `<h2>Комбо</h2>` +
+    Object.entries(COMBO).map(([n, p]) => `<p><span>${programs(n)}</span><b>${money(p)}</b></p>`).join("") +
+    `<small>Выберите несколько приложений — скидка посчитается сама. FaceApp в комбо не входит.</small>`;
+
+  const r = calc(), order = $("order");
+  order.disabled = !r.apps.length;
+  order.textContent = r.apps.length ? "Заказать в Telegram" : "Выберите приложения";
+  $("total").innerHTML = !r.apps.length ? "Нажмите на приложение, чтобы выбрать"
+    : r.total === null ? `Выбрано: ${r.apps.length} · цену уточнит менеджер`
+    : `Выбрано: ${r.apps.length} · итого <b>${money(r.total)}</b>${r.combo ? " (комбо)" : ""}`;
+}
+
+$("order").onclick = () => {
+  const r = calc();
+  const lines = r.total === null
+    ? [r.apps.map((a) => a.name).join(", ")]
+    : [
+        r.combo ? `${r.inCombo.map((a) => a.name).join(", ")} — комбо ${programs(r.inCombo.length)}, ${money(r.combo)}`
+                : r.inCombo.map((a) => `${a.name} — ${money(a.price)}`).join("\n"),
+        r.outside.map((a) => `${a.name} — ${money(a.price)}`).join("\n"),
+        `Итого: ${money(r.total)}`,
+      ].filter(Boolean);
+  const text = `Здравствуйте! Хочу оформить подписки:\n${lines.join("\n")}`;
+  openLink(`https://t.me/${MANAGER}?text=${encodeURIComponent(text)}`);
+};
+
+$("q").oninput = (e) => { state.q = e.target.value; render(); };
+$("reviews").onclick = (e) => { e.preventDefault(); openLink(REVIEWS); };
+
+render();
+</script>
+</body>
+</html>
