@@ -35,7 +35,10 @@
     width: 22px; height: 22px; border-radius: 50%; background: var(--accent); color: var(--accent-fg); font-size: 13px; }
   .logo { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 12px;
     color: #fff; font-size: 20px; font-weight: 700; }
+  img.logo { object-fit: cover; }
   .card b { font-size: 15px; }
+  .desc { color: var(--hint); font-size: 13px; line-height: 1.3; }
+  .card .price { margin-top: auto; }
   .card small { color: var(--hint); font-size: 12px; }
   .price { font-size: 14px; font-weight: 600; }
   .empty { grid-column: 1 / -1; padding: 32px 0; color: var(--hint); text-align: center; }
@@ -70,19 +73,20 @@
 
 <script>
 // Прайс (тенге), подписка на 1 год. forever — бессрочная (∞), noCombo — не входит в комбо.
+// icon — файл в icons/ (иконки из App Store); без icon показывается первая буква на фоне color.
 const CATALOG = [
-  { name: "Persona",     color: "#ff6fa8", price: 6000 },
-  { name: "InShot Pro",  color: "#f0435a", price: 4690 },
-  { name: "Reels App",   color: "#c13584", price: 6000 },
-  { name: "Leto",        color: "#f5a524", price: 6000 },
-  { name: "SubMe",       color: "#3b82f6", price: 6000 },
-  { name: "500 Stories", color: "#8b5cf6", price: 6000 },
-  { name: "Mojo",        color: "#1fb58f", price: 6000 },
-  { name: "Dazz Cam",    color: "#e8a33c", price: 3690, forever: true },
-  { name: "VSCO Plus",   color: "#111111", price: 5600 },
-  { name: "Lightroom",   color: "#1473e6", price: 3190 },
-  { name: "Moment",      color: "#6b7280", price: 3090, forever: true },
-  { name: "FaceApp",     color: "#2b2b2b", price: 6500, noCombo: true },
+  { name: "Persona",     icon: "persona",    price: 6000, desc: "Бьюти-камера и ретушь лица на фото и видео" },
+  { name: "InShot Pro",  icon: "inshot",     price: 4690, desc: "Монтаж видео: обрезка, музыка, скорость, эффекты" },
+  { name: "Reels App",   icon: "reelsapp",   price: 6000, desc: "Трендовые Reels по шаблонам, монтаж под музыку" },
+  { name: "Leto",        icon: "leto",       price: 6000, desc: "500+ шрифтов и редактор для сторис и Reels" },
+  { name: "SubMe",       icon: "subme",      price: 6000, desc: "Автоматические субтитры к видео" },
+  { name: "500 Stories", icon: "500stories", price: 6000, desc: "800+ анимированных шаблонов сторис и Reels" },
+  { name: "Mojo",        icon: "mojo",       price: 6000, desc: "1200+ шаблонов видео для Reels и TikTok" },
+  { name: "Dazz Cam",    icon: "dazzcam",    price: 3690, forever: true, desc: "Ретро-камера с эффектами плёнки" },
+  { name: "VSCO Plus",   icon: "vsco",       price: 5600, desc: "Фильтры и редактор фото и видео VSCO" },
+  { name: "Lightroom",   icon: "lightroom",  price: 3190, desc: "Обработка фото от Adobe с ИИ-инструментами" },
+  { name: "Moment",      color: "#6b7280",   price: 3090, forever: true },
+  { name: "FaceApp",     icon: "faceapp",    price: 6500, noCombo: true, desc: "ИИ-редактор селфи: фильтры, фоны, эффекты" },
 ];
 // Комбо: цена за N программ
 const COMBO = { 2: 10000, 3: 14000, 4: 18000, 5: 22000 };
@@ -121,8 +125,10 @@ function render() {
   const items = CATALOG.filter((a) => a.name.toLowerCase().includes(q));
   $("grid").innerHTML = items.length ? items.map((a) => `
     <button class="card ${state.picked.has(a.name) ? "sel" : ""}" data-name="${esc(a.name)}">
-      <span class="logo" style="background:${a.color}">${esc(a.name[0])}</span>
+      ${a.icon ? `<img class="logo" src="icons/${a.icon}.jpg" alt="">`
+               : `<span class="logo" style="background:${a.color}">${esc(a.name[0])}</span>`}
       <b>${esc(a.name)}</b>
+      ${a.desc ? `<span class="desc">${esc(a.desc)}</span>` : ""}
       <span class="price">${money(a.price)}</span>
       <small>${[a.forever ? "∞ навсегда" : "1 год", a.noCombo && "вне комбо"].filter(Boolean).join(" · ")}</small>
     </button>`).join("") : `<div class="empty">Ничего не нашлось</div>`;
